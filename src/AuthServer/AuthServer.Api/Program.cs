@@ -66,6 +66,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddScoped<AuthorizeRequestValidator>();
+builder.Services.AddScoped<AuthorizationCodeService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

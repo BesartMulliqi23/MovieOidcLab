@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using AuthServer.Api.OAuth.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace AuthServer.Api.Controllers;
 
@@ -8,10 +10,12 @@ namespace AuthServer.Api.Controllers;
 public sealed class AuthorizationController : ControllerBase
 {
     private readonly AuthorizeRequestValidator _validator;
+    private readonly AuthorizationCodeService _authorizationCodeService;
 
-    public AuthorizationController(AuthorizeRequestValidator validator)
+    public AuthorizationController(AuthorizeRequestValidator validator, AuthorizationCodeService authorizationCodeService)
     {
         _validator = validator;
+        _authorizationCodeService = authorizationCodeService;
     }
 
     [HttpGet("authorize")]
@@ -42,17 +46,36 @@ public sealed class AuthorizationController : ControllerBase
             });
         }
 
-        return Ok(new
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(userIdValue, out var userId))
         {
-            message = "Authorization request is valid and the user is authenticated.",
-            client_id = validationResult.Client!.ClientId,
-            client_name = validationResult.Client.ClientName,
-            redirect_uri = request.RedirectUri,
-            scope = validationResult.RequestedScopes,
-            state = request.State,
-            nonce = request.Nonce,
-            code_challenge = request.CodeChallenge,
-            code_challenge_method = request.CodeChallengeMethod
-        });
+            return Unauthorized(new
+            {
+                error = "invalid_user",
+                error_description = "The authenticated user id is invalid."
+            });
+        }
+
+        var code = await _authorizationCodeService.CreateAsync(
+            validationResult.Client!.Id,
+            userId,
+            request.RedirectUri!,
+            validationResult.RequestedScopes,
+            request.CodeChallenge!,
+            request.CodeChallengeMethod!,
+            request.Nonce
+        );
+
+        var redirectUri = QueryHelpers.AddQueryString(
+            request.RedirectUri!,
+            new Dictionary<string, string?>
+            {
+                ["code"] = code,
+                ["state"] = request.State
+            }
+        );
+
+        return Redirect(redirectUri);
     }
 }

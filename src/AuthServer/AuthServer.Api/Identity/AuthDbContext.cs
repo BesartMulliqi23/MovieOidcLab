@@ -12,6 +12,7 @@ public sealed class AuthDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<OAuthClient> OAuthClients => Set<OAuthClient>();
     public DbSet<OAuthClientRedirectUri> OAuthClientRedirectUris => Set<OAuthClientRedirectUri>();
     public DbSet<OAuthClientScope> OAuthClientScopes => Set<OAuthClientScope>();
+    public DbSet<AuthorizationCode> AuthorizationCodes => Set<AuthorizationCode>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -83,5 +84,22 @@ public sealed class AuthDbContext : IdentityDbContext<ApplicationUser, IdentityR
             new OAuthClientScope { Id = 4, OAuthClientId = 1, Scope = "movies.read" },
             new OAuthClientScope { Id = 5, OAuthClientId = 1, Scope = "movies.write" }
         );
+
+        builder.Entity<AuthorizationCode>(entity =>
+        {
+            entity.HasIndex(code => code.CodeHash).IsUnique();
+
+            entity.Property(code => code.CodeHash).HasMaxLength(100).IsRequired();
+            entity.Property(code => code.RedirectUri).HasMaxLength(500).IsRequired();
+            entity.Property(code => code.Scope).HasMaxLength(500).IsRequired();
+            entity.Property(code => code.CodeChallenge).HasMaxLength(200).IsRequired();
+            entity.Property(code => code.CodeChallengeMethod).HasMaxLength(20).IsRequired();
+            entity.Property(code => code.Nonce).HasMaxLength(200);
+
+            entity.HasOne(code => code.OAuthClient)
+                .WithMany()
+                .HasForeignKey(code => code.OAuthClientId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }
