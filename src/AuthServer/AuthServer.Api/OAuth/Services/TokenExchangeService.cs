@@ -9,16 +9,19 @@ public sealed class TokenExchangeService
     private readonly AuthDbContext _dbContext;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AccessTokenService _accessTokenService;
+    private readonly IdTokenService _idTokenService;
 
     public TokenExchangeService(
         AuthDbContext dbContext, 
         UserManager<ApplicationUser> userManager, 
-        AccessTokenService accessTokenService
+        AccessTokenService accessTokenService,
+        IdTokenService idTokenService
     )
     {
         _dbContext = dbContext;
         _userManager = userManager;
         _accessTokenService = accessTokenService;
+        _idTokenService = idTokenService;
     }
 
     public async Task<TokenExchangeResult> ExchangeAuthorizationCodeAsync(TokenRequest request)
@@ -91,6 +94,16 @@ public sealed class TokenExchangeService
         await _dbContext.SaveChangesAsync();
 
         var tokenResponse = _accessTokenService.CreateAccessToken(user, client.ClientId, authorizationCode.Scope);
+
+        var requestedScopes = authorizationCode.Scope
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        if (requestedScopes.Contains("openid", StringComparer.Ordinal))
+        {
+            var idToken = _idTokenService.CreateIdToken(user, client.ClientId, authorizationCode.Nonce);
+
+            tokenResponse = tokenResponse with { IdToken = idToken };
+        }
 
         return TokenExchangeResult.Success(tokenResponse);
     }

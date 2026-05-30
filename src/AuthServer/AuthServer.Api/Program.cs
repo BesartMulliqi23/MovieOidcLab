@@ -70,6 +70,7 @@ builder.Services.AddScoped<AuthorizationCodeService>();
 builder.Services.AddSingleton<SigningKeyService>();
 builder.Services.AddScoped<AccessTokenService>();
 builder.Services.AddScoped<TokenExchangeService>();
+builder.Services.AddScoped<IdTokenService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
