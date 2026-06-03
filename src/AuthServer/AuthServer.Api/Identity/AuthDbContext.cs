@@ -13,6 +13,7 @@ public sealed class AuthDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<OAuthClientRedirectUri> OAuthClientRedirectUris => Set<OAuthClientRedirectUri>();
     public DbSet<OAuthClientScope> OAuthClientScopes => Set<OAuthClientScope>();
     public DbSet<AuthorizationCode> AuthorizationCodes => Set<AuthorizationCode>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -99,6 +100,20 @@ public sealed class AuthDbContext : IdentityDbContext<ApplicationUser, IdentityR
             entity.HasOne(code => code.OAuthClient)
                 .WithMany()
                 .HasForeignKey(code => code.OAuthClientId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasIndex(token => token.TokenHash).IsUnique();
+
+            entity.Property(token => token.TokenHash).HasMaxLength(100).IsRequired();
+            entity.Property(token => token.RotationFamilyId).HasMaxLength(100).IsRequired();
+            entity.Property(token => token.Scope).HasMaxLength(500).IsRequired();
+
+            entity.HasOne(token => token.OAuthClient)
+                .WithMany()
+                .HasForeignKey(token => token.OAuthClientId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

@@ -18,4 +18,7 @@ public sealed class TokenRequest
 
     [FromForm(Name = "code_verifier")]
     public string? CodeVerifier { get; set; }
+
+    [FromForm(Name = "refresh_token")]
+    public string? RefreshToken { get; set; }
 }

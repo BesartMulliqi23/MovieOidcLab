@@ -18,7 +18,12 @@ public sealed class TokenController : ControllerBase
     [Consumes("application/x-www-form-urlencoded")]
     public async Task<IActionResult> Token([FromForm] TokenRequest request) 
     {
-        var result = await _tokenExchangeService.ExchangeAuthorizationCodeAsync(request);
+        var result = request.GrantType switch
+        {
+            "authorization_code" => await _tokenExchangeService.ExchangeAuthorizationCodeAsync(request),
+            "refresh_token" => await _tokenExchangeService.ExchangeRefreshTokenAsync(request),
+            _ => TokenExchangeResult.Failure("unsupported_grant_type", "Only authorization_code and refresh_token are supported.")
+        };
 
         if (!result.Succeeded)
         {

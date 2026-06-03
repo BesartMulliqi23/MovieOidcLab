@@ -71,6 +71,7 @@ builder.Services.AddSingleton<SigningKeyService>();
 builder.Services.AddScoped<AccessTokenService>();
 builder.Services.AddScoped<TokenExchangeService>();
 builder.Services.AddScoped<IdTokenService>();
+builder.Services.AddScoped<RefreshTokenService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

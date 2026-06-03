@@ -9,5 +9,8 @@ public sealed record TokenResponse(
     [property: JsonPropertyName("scope")] string Scope,
     [property: JsonPropertyName("id_token")]
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    string? IdToken = null
+    string? IdToken = null,
+    [property: JsonPropertyName("refresh_token")]
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    string? RefreshToken = null
 );

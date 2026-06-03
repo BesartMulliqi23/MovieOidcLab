@@ -10,18 +10,21 @@ public sealed class TokenExchangeService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AccessTokenService _accessTokenService;
     private readonly IdTokenService _idTokenService;
+    private readonly RefreshTokenService _refreshTokenService;
 
     public TokenExchangeService(
         AuthDbContext dbContext, 
         UserManager<ApplicationUser> userManager, 
         AccessTokenService accessTokenService,
-        IdTokenService idTokenService
+        IdTokenService idTokenService,
+        RefreshTokenService refreshTokenService
     )
     {
         _dbContext = dbContext;
         _userManager = userManager;
         _accessTokenService = accessTokenService;
         _idTokenService = idTokenService;
+        _refreshTokenService = refreshTokenService;
     }
 
     public async Task<TokenExchangeResult> ExchangeAuthorizationCodeAsync(TokenRequest request)
@@ -98,12 +101,73 @@ public sealed class TokenExchangeService
         var requestedScopes = authorizationCode.Scope
             .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
+        if (requestedScopes.Contains("offline_access", StringComparer.Ordinal))
+        {
+            var refreshToken = await _refreshTokenService.CreateAsync(
+                client.Id,
+                user.Id,
+                authorizationCode.Scope
+            );
+
+            tokenResponse = tokenResponse with { RefreshToken = refreshToken };
+        }
+
         if (requestedScopes.Contains("openid", StringComparer.Ordinal))
         {
             var idToken = _idTokenService.CreateIdToken(user, client.ClientId, authorizationCode.Nonce);
 
             tokenResponse = tokenResponse with { IdToken = idToken };
         }
+
+        return TokenExchangeResult.Success(tokenResponse);
+    }
+
+    public async Task<TokenExchangeResult> ExchangeRefreshTokenAsync(TokenRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ClientId) || string.IsNullOrWhiteSpace(request.RefreshToken))
+        {
+            return TokenExchangeResult.Failure("invalid_request", "client_id and refresh_token are required.");
+        }
+
+        var client = await _dbContext.OAuthClients
+            .SingleOrDefaultAsync(client => client.ClientId == request.ClientId);
+
+        if (client is null || !client.IsActive)
+        {
+            return TokenExchangeResult.Failure("invalid_client", "The client is invalid.");
+        }
+
+        var validationResult = await _refreshTokenService.ValidateForRotationAsync(request.RefreshToken, client.Id);
+
+        if (!validationResult.Succeeded)
+        {
+            return TokenExchangeResult.Failure(validationResult.Error!, validationResult.ErrorDescription!);
+        }
+
+        var oldRefreshToken = validationResult.RefreshToken!;
+
+        var user = await _userManager.FindByIdAsync(oldRefreshToken.UserId.ToString());
+
+        if (user is null)
+        {
+            return TokenExchangeResult.Failure("invalid_grant", "The user no longer exists.");
+        }
+
+        var newRefreshToken = await _refreshTokenService.RotateAsync(oldRefreshToken);
+
+        var tokenResponse = _accessTokenService.CreateAccessToken(user, client.ClientId, oldRefreshToken.Scope);
+
+        var requestedScopes = oldRefreshToken.Scope
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        if (requestedScopes.Contains("openid", StringComparer.Ordinal))
+        {
+            var idtoken = _idTokenService.CreateIdToken(user, client.ClientId, nonce: null);
+
+            tokenResponse = tokenResponse with { IdToken = idtoken };
+        }
+
+        tokenResponse = tokenResponse with { RefreshToken = newRefreshToken };
 
         return TokenExchangeResult.Success(tokenResponse);
     }
