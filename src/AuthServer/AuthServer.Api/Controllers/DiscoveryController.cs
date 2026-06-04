@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using AuthServer.Api.OAuth.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -39,11 +40,11 @@ public sealed class DiscoveryController : ControllerBase
     }
 
     [HttpGet(".well-known/jwks.json")]
-    public IActionResult JsonWebKeySet()
+    public async Task<IActionResult> JsonWebKeySet()
     {
         return Ok(new
         {
-            keys = new[] { _signingKeyService.GetPublicJsonWebKey() }
+            keys = new[] { await _signingKeyService.GetPublicJsonWebKeyAsync() }
         });
     }
 }

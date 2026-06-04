@@ -96,7 +96,7 @@ public sealed class TokenExchangeService
 
         await _dbContext.SaveChangesAsync();
 
-        var tokenResponse = _accessTokenService.CreateAccessToken(user, client.ClientId, authorizationCode.Scope);
+        var tokenResponse = await _accessTokenService.CreateAccessTokenAsync(user, client.ClientId, authorizationCode.Scope);
 
         var requestedScopes = authorizationCode.Scope
             .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -114,7 +114,7 @@ public sealed class TokenExchangeService
 
         if (requestedScopes.Contains("openid", StringComparer.Ordinal))
         {
-            var idToken = _idTokenService.CreateIdToken(user, client.ClientId, authorizationCode.Nonce);
+            var idToken = await _idTokenService.CreateIdTokenAsync(user, client.ClientId, authorizationCode.Nonce);
 
             tokenResponse = tokenResponse with { IdToken = idToken };
         }
@@ -155,14 +155,14 @@ public sealed class TokenExchangeService
 
         var newRefreshToken = await _refreshTokenService.RotateAsync(oldRefreshToken);
 
-        var tokenResponse = _accessTokenService.CreateAccessToken(user, client.ClientId, oldRefreshToken.Scope);
+        var tokenResponse = await _accessTokenService.CreateAccessTokenAsync(user, client.ClientId, oldRefreshToken.Scope);
 
         var requestedScopes = oldRefreshToken.Scope
             .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         if (requestedScopes.Contains("openid", StringComparer.Ordinal))
         {
-            var idtoken = _idTokenService.CreateIdToken(user, client.ClientId, nonce: null);
+            var idtoken = await _idTokenService.CreateIdTokenAsync(user, client.ClientId, nonce: null);
 
             tokenResponse = tokenResponse with { IdToken = idtoken };
         }

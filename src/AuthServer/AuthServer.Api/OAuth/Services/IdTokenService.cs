@@ -15,7 +15,7 @@ public sealed class IdTokenService
         _signingKeyService = signingKeyService;
     }
 
-    public string CreateIdToken(ApplicationUser user, string clientId, string? nonce)
+    public async Task<string> CreateIdTokenAsync(ApplicationUser user, string clientId, string? nonce)
     {
         var issuer = _configuration["OAuth:Issuer"]!;
         var lifetimeMinutes = _configuration.GetValue<int>("OAuth:IdTokenLifetimeMinutes");
@@ -51,7 +51,7 @@ public sealed class IdTokenService
             claims: claims,
             notBefore: now.UtcDateTime,
             expires: expiresAt.UtcDateTime,
-            signingCredentials: _signingKeyService.GetSigningCredentials()
+            signingCredentials: await _signingKeyService.GetSigningCredentialsAsync()
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);

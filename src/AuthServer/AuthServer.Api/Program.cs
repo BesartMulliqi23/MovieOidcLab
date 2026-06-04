@@ -67,7 +67,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddScoped<AuthorizeRequestValidator>();
 builder.Services.AddScoped<AuthorizationCodeService>();
-builder.Services.AddSingleton<SigningKeyService>();
+builder.Services.AddScoped<SigningKeyService>();
 builder.Services.AddScoped<AccessTokenService>();
 builder.Services.AddScoped<TokenExchangeService>();
 builder.Services.AddScoped<IdTokenService>();

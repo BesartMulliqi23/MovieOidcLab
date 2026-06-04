@@ -15,7 +15,7 @@ public sealed class AccessTokenService
         _signingKeyService = signingKeyService;
     }
 
-    public TokenResponse CreateAccessToken(ApplicationUser user, string clientId, string scope)
+    public async Task<TokenResponse> CreateAccessTokenAsync(ApplicationUser user, string clientId, string scope)
     {
         var issuer = _configuration["OAuth:Issuer"]!;
         var lifetimeMinutes = _configuration.GetValue<int>("OAuth:AccessTokenLifetimeMinutes", 15);
@@ -40,7 +40,7 @@ public sealed class AccessTokenService
             claims: claims,
             notBefore: DateTime.UtcNow,
             expires: expiresAt,
-            signingCredentials: _signingKeyService.GetSigningCredentials()
+            signingCredentials: await _signingKeyService.GetSigningCredentialsAsync()
         );
 
         var accessToken = new JwtSecurityTokenHandler().WriteToken(token);

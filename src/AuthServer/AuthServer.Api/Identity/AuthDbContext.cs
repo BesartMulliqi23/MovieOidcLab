@@ -14,6 +14,7 @@ public sealed class AuthDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<OAuthClientScope> OAuthClientScopes => Set<OAuthClientScope>();
     public DbSet<AuthorizationCode> AuthorizationCodes => Set<AuthorizationCode>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<SigningKey> SigningKeys => Set<SigningKey>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -115,6 +116,16 @@ public sealed class AuthDbContext : IdentityDbContext<ApplicationUser, IdentityR
                 .WithMany()
                 .HasForeignKey(token => token.OAuthClientId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<SigningKey>(entity =>
+        {
+            entity.HasIndex(key => key.KeyId).IsUnique();
+
+            entity.Property(key => key.KeyId).HasMaxLength(100).IsRequired();
+            entity.Property(key => key.Algorithm).HasMaxLength(20).IsRequired();
+            entity.Property(key => key.PrivateKeyPem).IsRequired();
+            entity.Property(key => key.PublicKeyPem).IsRequired();
         });
     }
 }
