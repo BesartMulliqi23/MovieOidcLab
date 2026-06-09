@@ -35,15 +35,19 @@ public sealed class AuthorizationController : ControllerBase
 
         if (User.Identity?.IsAuthenticated != true)
         {
-            return Unauthorized(new
-            {
-                error = "login_required",
-                error_description = "The user must be logged in before authorization can continue.",
-                client_id = validationResult.Client!.ClientId,
-                redirect_uri = request.RedirectUri,
-                scope = validationResult.RequestedScopes,
-                state = request.State
-            });
+            var authUiBaseUrl = HttpContext.RequestServices
+                .GetRequiredService<IConfiguration>()["Frontend:AuthUiBaseUrl"];
+
+            var returnUrl = 
+                $"{Request.Scheme}://{Request.Host}{Request.PathBase}{Request.Path}{Request.QueryString}";
+
+            var loginUrl = QueryHelpers.AddQueryString(
+                $"{authUiBaseUrl}/login",
+                "returnUrl",
+                returnUrl
+            );
+
+            return Redirect(loginUrl);
         }
 
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);

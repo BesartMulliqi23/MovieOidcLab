@@ -30,7 +30,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "__Host.AuthServer";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 
     options.LoginPath = "/login";
@@ -65,6 +65,18 @@ builder.Services.ConfigureApplicationCookie(options =>
     };
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendApps", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5174")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
 builder.Services.AddScoped<AuthorizeRequestValidator>();
 builder.Services.AddScoped<AuthorizationCodeService>();
 builder.Services.AddScoped<SigningKeyService>();
@@ -86,6 +98,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("FrontendApps");
 
 app.UseAuthentication();
 app.UseAuthorization();
