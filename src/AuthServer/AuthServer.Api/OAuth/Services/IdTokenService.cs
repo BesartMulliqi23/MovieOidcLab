@@ -42,7 +42,7 @@ public sealed class IdTokenService
 
         if (!string.IsNullOrWhiteSpace(nonce))
         {
-            claims.Add(new Claim(JwtRegisteredClaimNames.Nonce, nonce));
+            claims.Add(new Claim("nonce", nonce));
         }
 
         var token = new JwtSecurityToken(

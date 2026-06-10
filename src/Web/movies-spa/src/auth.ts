@@ -11,6 +11,12 @@ export type TokenResponse = {
     refresh_token?: string;
 };
 
+export type AuthUser = {
+    sub: string;
+    email?: string;
+    name?: string;
+};
+
 export async function login() {
     const state = crypto.randomUUID();
     const nonce = crypto.randomUUID();
@@ -65,6 +71,17 @@ export async function handleCallback() {
     }
 
     const tokens = (await response.json()) as TokenResponse;
+
+    if (tokens.id_token) {
+        const payload = decodeJwtPayload(tokens.id_token);
+        const expectedNonce = sessionStorage.getItem("oauth_nonce");
+
+        if (payload.nonce !== expectedNonce) {
+            clearTokens();
+            throw new Error("Invalid ID token nonce.");
+        }
+    }
+
     saveTokens(tokens);  
 
     sessionStorage.removeItem("oauth_state");
@@ -129,4 +146,46 @@ function base64UrlEncode(bytes: Uint8Array) {
         .replace(/\+/g, "-")
         .replace(/\//g, "_")
         .replace(/=+$/, "");
+}
+
+export function getCurrentUser() : AuthUser | null {
+    const idToken = sessionStorage.getItem("id_token");
+
+    if (!idToken) return null;
+
+    const payload = decodeJwtPayload(idToken);
+
+    return {
+        sub: String(payload.sub),
+        email: payload.email ? String(payload.email) : undefined,
+        name: payload.name? String(payload.name) : undefined
+    };
+}
+
+function decodeJwtPayload(token: string) : Record<string, unknown> {
+    const parts = token.split(".");
+
+    if (parts.length !== 3) throw new Error("Invalid JWT format.");
+
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const json = atob(base64.padEnd(base64.length + ((4 - base64.length % 4 ) % 4), "="));
+
+    return JSON.parse(json) as Record<string, unknown>;
+}
+
+export function isAccessTokenExpiringSoon() {
+    const expiresAt = Number(sessionStorage.getItem("expires_at"));
+
+    if (!expiresAt) return true;
+
+    const oneMinuteFromNow = Date.now() + 60_000;
+
+    return expiresAt <= oneMinuteFromNow;
+}
+
+export async function getValidAccessToken() {
+    if (isAccessTokenExpiringSoon()) await refreshTokens();
+
+    return getAccessToken();
 }

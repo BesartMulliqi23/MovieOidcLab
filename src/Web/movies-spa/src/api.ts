@@ -1,4 +1,4 @@
-import { getAccessToken, refreshTokens } from "./auth";
+import { getValidAccessToken, refreshTokens } from "./auth";
 
 const moviesApi = "https://localhost:7131";
 
@@ -35,7 +35,7 @@ async function authorizedFetch<T>(path: string, init: RequestInit = {}) {
         ...init,
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${getAccessToken()}`,
+            Authorization: `Bearer ${await getValidAccessToken()}`,
             ...init.headers
         }
     });
@@ -47,7 +47,7 @@ async function authorizedFetch<T>(path: string, init: RequestInit = {}) {
             ...init,
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${getAccessToken()}`,
+                Authorization: `Bearer ${await getValidAccessToken()}`,
                 ...init.headers
             }
         });

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { createMovie, getMovies, type Movie } from "./api";
-import { clearTokens, getAccessToken, handleCallback, login } from "./auth";
+import { clearTokens, getAccessToken, getCurrentUser, handleCallback, login } from "./auth";
 import "./App.css";
 
 export default function App() {
@@ -8,8 +8,16 @@ export default function App() {
     const [title, setTitle] = useState("Interstellar");
     const [status, setStatus] = useState("");
 
+    const callbackHandled = useRef(false);
+
+    const user = getCurrentUser();
+
     useEffect(() => {
         if (window.location.pathname === "/callback") {
+            if (callbackHandled.current) return;
+
+            callbackHandled.current = true;
+
             handleCallback()
                 .then(() => {
                     window.history.replaceState({}, "", "/");
@@ -63,6 +71,12 @@ export default function App() {
         <main className="shell">
             <header>
                 <h1>Movies</h1>
+
+                {user && (
+                    <p className="user-line">
+                        Signed in as {user.name ?? user.email ?? user.sub}
+                    </p>
+                )}
 
                 <button onClick={() => {
                     clearTokens();
