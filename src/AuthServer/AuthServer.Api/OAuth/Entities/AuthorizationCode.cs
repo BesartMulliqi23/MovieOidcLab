@@ -15,4 +15,5 @@ public sealed class AuthorizationCode
     public DateTimeOffset ExpiresAt { get; set; }
     public DateTimeOffset? ConsumedAt { get; set; }
     public OAuthClient OAuthClient { get; set; } = null!;
+    public byte[] RowVersion { get; set; } = [];
 }

@@ -1,3 +1,4 @@
+using System.Data;
 using AuthServer.Api.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -94,7 +95,14 @@ public sealed class TokenExchangeService
 
         authorizationCode.ConsumedAt = DateTimeOffset.UtcNow;
 
-        await _dbContext.SaveChangesAsync();
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return TokenExchangeResult.Failure("invalid_grant", "The authorization code has already been used.");
+        }
 
         var tokenResponse = await _accessTokenService.CreateAccessTokenAsync(user, client.ClientId, authorizationCode.Scope);
 

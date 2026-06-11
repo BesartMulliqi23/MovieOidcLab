@@ -97,6 +97,7 @@ public sealed class AuthDbContext : IdentityDbContext<ApplicationUser, IdentityR
             entity.Property(code => code.CodeChallenge).HasMaxLength(200).IsRequired();
             entity.Property(code => code.CodeChallengeMethod).HasMaxLength(20).IsRequired();
             entity.Property(code => code.Nonce).HasMaxLength(200);
+            entity.Property(code => code.RowVersion).IsRowVersion();
 
             entity.HasOne(code => code.OAuthClient)
                 .WithMany()
